@@ -1,0 +1,4 @@
+robin-stocks
+python-dotenv
+pandas
+openpyxl
