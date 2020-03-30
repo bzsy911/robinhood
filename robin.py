@@ -33,3 +33,12 @@ class Robin:
         end = now()
         df.to_excel(f'output/price_{start}_{end}.xlsx')
         print('data saved')
+
+
+def build_hist():
+    all_orders = r.get_all_orders()
+    for order in all_orders:
+        order['ticker'] = r.get_symbol_by_url(order['instrument'])
+    df = pd.DataFrame(all_orders)
+    df.to_excel(f'output/order_all.xlsx')
+    return
