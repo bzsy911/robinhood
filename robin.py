@@ -5,6 +5,7 @@ import robin_stocks as r
 from dotenv import load_dotenv
 from utils import close_time, now
 
+
 class Robin:
 
     def __init__(self):
@@ -36,7 +37,7 @@ class Robin:
 
 
 def build_hist():
-    all_orders = r.get_all_orders()
+    all_orders = r.get_all_stock_orders()
     for order in all_orders:
         order['ticker'] = r.get_symbol_by_url(order['instrument'])
     df = pd.DataFrame(all_orders)
