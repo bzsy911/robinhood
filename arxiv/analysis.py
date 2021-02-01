@@ -8,6 +8,7 @@ dt = {}
 for i in range(18):
     dt[df[i][0]] = [float(x) for x in df[i][1:]]
 
+
 def trade(obs, thresh=1):
     holding = 0
     money = 10000

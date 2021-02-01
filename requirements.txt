@@ -1,5 +1,7 @@
+numpy
 robin-stocks
 python-dotenv
 pandas
 openpyxl
 matplotlib
+xlrd

@@ -1,4 +1,5 @@
 import time
+import datetime
 
 
 def close_time(extend=False):
@@ -9,3 +10,6 @@ def close_time(extend=False):
 def now():
     return time.strftime("%b %d %Y %H:%M:%S", time.localtime())
 
+
+def utc_to_local(utc_ts):
+    pass
