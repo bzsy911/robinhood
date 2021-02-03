@@ -4,11 +4,11 @@ from src import api
 
 
 def process_raw_history(all_orders):
-    with open('../data/reference/ticker_dict.json') as f:
+    with open('data/reference/ticker_dict.json') as f:
         ticker_dict = json.load(f)
-    with open('../data/reference/ticker_map.json') as f:
+    with open('data/reference/ticker_map.json') as f:
         ticker_map = json.load(f)
-    with open('../data/reference/split_history.csv') as f:
+    with open('data/reference/split_history.csv') as f:
         split_history = [line.split(',') for line in f.readlines()]
 
     all_orders = [order for order in all_orders if float(order['cumulative_quantity']) != 0]
@@ -36,9 +36,9 @@ def process_raw_history(all_orders):
                        for time, ticker, price, quantity, cost in split_history])
 
     df = pd.DataFrame(all_orders)[['time', 'ticker', 'price', 'quantity', 'cost']]
-    df.to_csv(f'../output/order_all.csv', index=False)
+    df.to_csv(f'output/order_all.csv', index=False)
 
-    with open('../data/reference/ticker_dict.json', 'w') as f:
+    with open('data/reference/ticker_dict.json', 'w') as f:
         json.dump(ticker_dict, f)
 
     return df

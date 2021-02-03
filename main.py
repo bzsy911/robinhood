@@ -41,15 +41,38 @@ Pipeline:
 """
 
 
-def build_holding_strategy(from_csv=True):
-    if from_csv:
-        order_df = pd.read_csv('output/order_all.csv')
-    else:
+def build_holding_strategy(extract_new_orders=False, write_to_file=False):
+    if extract_new_orders:
         order_df = process_raw_history(api.get_all_stock_orders())
+    else:
+        order_df = pd.read_csv('output/order_all.csv')
     tb = order_df.groupby('ticker')[['quantity']].sum()
     portfolio = [Present(order_df[order_df['ticker'] == ticker]) for ticker in tb[tb['quantity'] != 0].index]
-    for profile in portfolio:
-        print(profile.strategy)
+    present = pd.DataFrame([p.profile for p in portfolio])
+    if write_to_file:
+        present.to_excel('output/present_strategy.xlsx', index=False)
+
+    lite_col = ['Ticker', 'Holding', 'Last_Bought_at', 'Lock_Depth', 'Current_Price', 'Last_Bought_Change', 'Strategy',
+                'Next_Target', 'Target_%', 'Gap']
+    sell = present[present['Strategy'].isin(['SELL', '50%+ SELL'])].sort_values('Sort', ascending=False)[lite_col]
+    buy = present[present['Strategy'].isin(['BUY', '50%- BUY'])].sort_values('Sort')[lite_col]
+    high = present[present['Strategy'] == 'watch SELL'].sort_values('Sort')[lite_col]
+    low = present[present['Strategy'] == 'watch BUY'].sort_values('Sort', ascending=False)[lite_col]
+    keep = present[present['Strategy'] == 'wait'].sort_values('Sort', ascending=False)[lite_col]
+
+    pd.set_option("display.max_rows", None,
+                  "display.max_columns", None,
+                  "display.width", 150)
+    ls = list(zip([sell, buy, high, low, keep],
+                  ['Ready to Sell:', 'Ready to Buy:', 'Close to Sell:', 'Close to Buy:', 'Keep Waiting:']))
+    for i in range(5):
+        # set 5 if want to print Keeps
+        df, title = ls[i]
+        if len(df) > 0:
+            print(title)
+            print(df)
+            print()
+    return
 
 
 if __name__ == "__main__":
