@@ -52,8 +52,8 @@ def build_holding_strategy(extract_new_orders=False, write_to_file=False):
     if write_to_file:
         present.to_excel('output/present_strategy.xlsx', index=False)
 
-    lite_col = ['Ticker', 'Holding', 'Last_Bought_at', 'Lock_Depth', 'Current_Price', 'Last_Bought_Change', 'Strategy',
-                'Next_Target', 'Target_%', 'Gap']
+    lite_col = ['Ticker', 'Holding', 'Last_Bought_at', 'Lock_Depth', 'Last_Bought_Change', 'Current_Price',
+                'Next_Target', 'Next_Target_%', 'Gap']
     sell = present[present['Strategy'].isin(['SELL', '50%+ SELL'])].sort_values('Sort', ascending=False)[lite_col]
     buy = present[present['Strategy'].isin(['BUY', '50%- BUY'])].sort_values('Sort')[lite_col]
     high = present[present['Strategy'] == 'watch SELL'].sort_values('Sort')[lite_col]
@@ -76,4 +76,5 @@ def build_holding_strategy(extract_new_orders=False, write_to_file=False):
 
 
 if __name__ == "__main__":
+    # build_holding_strategy(extract_new_orders=True, write_to_file=True)
     build_holding_strategy()

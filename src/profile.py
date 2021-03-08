@@ -27,7 +27,7 @@ class Profile:
                              '52w_High': fundamental['high_52_weeks'],
                              'PE_Ratio': fundamental['pe_ratio'],
                              'Dividend': fundamental['dividend_yield'],
-                             'Current_Price': float(price)})
+                             'Current_Price': round(float(price), 2)})
         return
 
 
@@ -87,7 +87,7 @@ class Present(Profile):
 
     def get_limits(self):
         current_avg_cost = -sum(self.profile['Current_Stack'].cost) / sum(self.profile['Current_Stack'].quantity)
-        buy_in_price = (0.85 - 0.1 * (self.profile['Lock_Depth'] - 1)) * current_avg_cost / self.profile['Lock_Depth']
+        buy_in_price = (0.85 - 0.1 * (self.profile['Lock_Depth'] - 1)) * current_avg_cost
         last_bought_at = self.profile['Current_Stack'].iat[-1, 2]
         self.profile.update({'Current_Avg_Cost': round(current_avg_cost, 2),
                              'Buy_in_Price': round(buy_in_price, 2),
@@ -130,7 +130,7 @@ class Present(Profile):
         self.profile.update({'Strategy': strategy,
                              'Gap': pct_round(gap, 2),
                              'Next_Target': target,
-                             'Target_%': pct_round(percent)})
+                             'Next_Target_%': pct_round(percent)})
         sort = gap if 'watch' in strategy else self.profile['Current_Price'] / self.profile['Last_Bought_at'] - 1
         self.profile.update({'Sort': sort})
         return
