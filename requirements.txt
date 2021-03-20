@@ -1,7 +1,5 @@
-numpy
-robin-stocks
-python-dotenv
-pandas
-openpyxl
-matplotlib
-xlrd
+robin-stocks==1.2.0
+python-dotenv==0.15.0
+pandas=1.2.3
+openpyxl==3.0.7
+xlrd==2.0.1
