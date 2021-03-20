@@ -76,5 +76,5 @@ def build_holding_strategy(extract_new_orders=False, write_to_file=False):
 
 
 if __name__ == "__main__":
-    # build_holding_strategy(extract_new_orders=True, write_to_file=True)
-    build_holding_strategy()
+    build_holding_strategy(extract_new_orders=True, write_to_file=True)
+    # build_holding_strategy()

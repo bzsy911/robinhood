@@ -87,31 +87,30 @@ class Present(Profile):
 
     def get_limits(self):
         current_avg_cost = -sum(self.profile['Current_Stack'].cost) / sum(self.profile['Current_Stack'].quantity)
-        buy_in_price = (0.85 - 0.1 * (self.profile['Lock_Depth'] - 1)) * current_avg_cost
+        buy_in_price = (0.8 - 0.1 * (self.profile['Lock_Depth'] - 1)) * current_avg_cost
         last_bought_at = self.profile['Current_Stack'].iat[-1, 2]
         self.profile.update({'Current_Avg_Cost': round(current_avg_cost, 2),
                              'Buy_in_Price': round(buy_in_price, 2),
                              'Last_Bought_at': round(last_bought_at, 2),
                              'Last_Bought_Change': pct_round(self.profile['Current_Price'] / last_bought_at - 1, 2),
-                             'sp10': round(1.1 * last_bought_at, 2),
                              'sp15': round(1.15 * last_bought_at, 2),
-                             'sp20': round(1.2 * last_bought_at, 2),
-                             'sp30': round(1.3 * last_bought_at, 2),
+                             'sp25': round(1.25 * last_bought_at, 2),
+                             'sp35': round(1.35 * last_bought_at, 2),
                              'sp50': round(1.5 * last_bought_at, 2)})
         return
 
     def get_strategy(self):
         if self.profile['Current_Price'] >= self.profile['Last_Bought_at']:
-            if 1.03 * self.profile['Current_Price'] < self.profile['sp10']:
+            if 1.03 * self.profile['Current_Price'] < self.profile['sp15']:
                 strategy = 'wait'
-            elif self.profile['Current_Price'] < self.profile['sp10']:
+            elif self.profile['Current_Price'] < self.profile['sp15']:
                 strategy = 'watch SELL'
             elif self.profile['Current_Price'] < self.profile['sp50']:
                 strategy = 'SELL'
             else:
                 strategy = '50%+ SELL'
             gap, target, percent = ([(1 - self.profile['Current_Price'] / target, target, percent/100)
-                                     for target, percent in [(self.profile[f'sp{x}'], x) for x in [10, 15, 20, 30, 50]]
+                                     for target, percent in [(self.profile[f'sp{x}'], x) for x in [15, 25, 35, 50]]
                                      if self.profile['Current_Price'] <= target] +
                                     [(0, self.profile['sp50'],
                                       self.profile['Current_Price'] / self.profile['Last_Bought_at'] - 1)])[0]
@@ -119,14 +118,14 @@ class Present(Profile):
             if self.profile['Current_Price'] > self.profile['Buy_in_Price']:
                 gap = self.profile['Buy_in_Price'] / self.profile['Current_Price'] - 1
                 target = self.profile['Buy_in_Price']
-                percent = 0.85 - 0.1 * (self.profile['Lock_Depth'] - 1)
+                percent = 0.8 - 0.1 * (self.profile['Lock_Depth'] - 1)
                 strategy = 'wait' if 0.97 * self.profile['Current_Price'] >= self.profile['Buy_in_Price'] \
                     else 'watch BUY'
             else:
                 gap = 0
                 target = self.profile['Buy_in_Price']
-                percent = 0.85 - 0.1 * (self.profile['Lock_Depth'] - 1)
-                strategy = 'BUY' if 2 * self.profile['Current_Price'] >= self.profile['Buy_in_Price'] else '50%- BUY'
+                percent = 0.8 - 0.1 * (self.profile['Lock_Depth'] - 1)
+                strategy = 'BUY' if self.profile['Current_Price'] >= 0.5 * self.profile['Buy_in_Price'] else '50%- BUY'
         self.profile.update({'Strategy': strategy,
                              'Gap': pct_round(gap, 2),
                              'Next_Target': target,
