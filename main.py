@@ -1,6 +1,6 @@
 import src.api as api
 from src.order import process_raw_history
-from src.profile import Present
+from src.profile import Present, Ex
 import pandas as pd
 pd.options.mode.chained_assignment = None
 
@@ -75,6 +75,48 @@ def build_holding_strategy(extract_new_orders=False, write_to_file=False):
     return
 
 
+def build_ex_strategy(extract_new_orders=False, write_to_file=False):
+    if extract_new_orders:
+        order_df = process_raw_history(api.get_all_stock_orders())
+    else:
+        order_df = pd.read_csv('output/order_all.csv')
+    tb = order_df.groupby('ticker')[['quantity']].sum()
+    portfolio = [Ex(order_df[order_df['ticker'] == ticker]) for ticker in tb[tb['quantity'] == 0].index]
+    ex = pd.DataFrame([p.profile for p in portfolio if not p.profile.get('Delisted', False)])
+    if write_to_file:
+        ex.to_excel('output/ex_strategy.xlsx', index=False)
+
+    lite_col = ['Ticker', 'Last_Bought_at', 'Last_Sold_at', 'Current_Price',
+                'Position_to_Last_Bought', 'Position_to_Last_sold', '52w_Low', '52w_High', 'Position_to_52w',
+                'Next_Target', 'Gap']
+    buy = ex[ex['Strategy'].isin(['BUY', 'Strong BUY'])].sort_values('Sort')[lite_col]
+    low = ex[ex['Strategy'] == 'watch BUY'].sort_values('Sort', ascending=False)[lite_col]
+    keep = ex[ex['Strategy'] == 'wait'].sort_values('Sort', ascending=False)[lite_col]
+
+    pd.set_option("display.max_rows", None,
+                  "display.max_columns", None,
+                  "display.width", 200)
+    ls = list(zip([buy, low, keep],
+                  ['Ready to Buy:', 'Close to Buy:', 'Keep Waiting:']))
+    for i in range(3):
+        # set 3 if want to print Keeps
+        df, title = ls[i]
+        if len(df) > 0:
+            print(title)
+            print(df)
+            print()
+    return
+
+
+def run(new_orders=0):
+    if new_orders:
+        build_holding_strategy(extract_new_orders=True, write_to_file=True)
+        # build_ex_strategy(extract_new_orders=True, write_to_file=True)
+    else:
+        build_holding_strategy()
+        # build_ex_strategy()
+    return
+
+
 if __name__ == "__main__":
-    build_holding_strategy(extract_new_orders=True, write_to_file=True)
-    # build_holding_strategy()
+    run(0)

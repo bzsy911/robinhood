@@ -14,7 +14,7 @@ def process_raw_history(all_orders):
     all_orders = [order for order in all_orders if float(order['cumulative_quantity']) != 0]
     for order in all_orders:
         order['amount'] = -1 * float(order['executed_notional']['amount'])
-        order['quantity'] = int(float(order['cumulative_quantity']))
+        order['quantity'] = float(order['cumulative_quantity'])
         if order['side'] == 'sell':
             order['amount'] *= -1
             order['quantity'] *= -1
@@ -32,7 +32,7 @@ def process_raw_history(all_orders):
         order['ticker'] = ticker_map.get(order['ticker'], order['ticker'])
 
     all_orders.extend([{'time': time, 'ticker': ticker, 'price': float(price),
-                        'quantity': int(quantity), 'cost': float(cost), 'instrument': ''}
+                        'quantity': float(quantity), 'cost': float(cost), 'instrument': ''}
                        for time, ticker, price, quantity, cost in split_history])
 
     df = pd.DataFrame(all_orders)[['time', 'ticker', 'price', 'quantity', 'cost']]

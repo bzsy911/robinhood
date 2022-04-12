@@ -9,22 +9,24 @@ class Profile:
         self.profile = {'Ticker': ticker}
 
         if ticker is not None:
-            fundamentals, prices = self.validate()
-            if len(fundamentals) * len(prices) > 0:
-                self.build_basic(fundamentals[0], prices[0])
+            fundamental, price = self.validate()
+            if fundamental and price:
+                self.build_basic(fundamental, price)
+            else:
+                self.profile['Delisted'] = True
 
     def validate(self):
         try:
-            fundamentals = api.get_fundamentals(self.profile['Ticker'])
-            prices = api.get_latest_price(self.profile['Ticker'])
+            fundamental = api.get_fundamentals(self.profile['Ticker'])[0]
+            price = api.get_latest_price(self.profile['Ticker'])[0]
         except:
-            fundamentals = []
-            prices = []
-        return fundamentals, prices
+            fundamental = None
+            price = None
+        return fundamental, price
 
     def build_basic(self, fundamental, price):
-        self.profile.update({'52w_Low': fundamental['low_52_weeks'],
-                             '52w_High': fundamental['high_52_weeks'],
+        self.profile.update({'52w_Low': round(float(fundamental['low_52_weeks']), 2),
+                             '52w_High': round(float(fundamental['high_52_weeks']), 2),
                              'PE_Ratio': fundamental['pe_ratio'],
                              'Dividend': fundamental['dividend_yield'],
                              'Current_Price': round(float(price), 2)})
@@ -136,18 +138,86 @@ class Present(Profile):
 
 
 class Ex(Profile):
-    pass
+
+    def __init__(self, history):
+        self.history = history.sort_values(by='time')
+        super().__init__(self.history.iat[0, 1])
+        if not self.profile.get('Delisted', False):
+            self.build_profile()
+
+    def build_profile(self):
+        self.get_recent_trades()
+        self.get_limits()
+        self.get_strategy()
+
+    def get_recent_trades(self):
+        quantity_list = self.history.quantity.tolist()
+        partial_sum = [sum(quantity_list[:i+1]) for i in range(len(quantity_list))]
+        if partial_sum.count(0) == 1:
+            last_trades = self.history
+        else:
+            clean_up_points = [idx for idx, val in enumerate(partial_sum) if val == 0]
+            last_trades = self.history.iloc[clean_up_points[-2] + 1:clean_up_points[-1] + 1, :]
+        self.profile.update({'Last_Trades': last_trades,
+                             'Total_Prev_Profit': sum(self.history.cost)})
+        return
+
+    def get_limits(self):
+        last_bought_at = self.profile['Last_Trades'][self.profile['Last_Trades']['quantity'] > 0]['price'].tolist()[-1]
+        if last_bought_at == 0:
+            self.profile['Gifted'] = True
+        last_sold_at = self.profile['Last_Trades'][self.profile['Last_Trades']['quantity'] < 0]['price'].tolist()[-1]
+        if not self.profile.get('Gifted', False):
+            self.profile.update({'Last_Bought_at': round(last_bought_at, 2),
+                                 'Last_Sold_at': round(last_sold_at, 2),
+                                 'Position_to_Last_Bought': pct_round(
+                                     self.profile['Current_Price'] / last_bought_at),
+                                 'Position_to_Last_sold': pct_round(
+                                     self.profile['Current_Price'] / last_sold_at),
+                                 'Position_to_52w': pct_round(
+                                 (self.profile['Current_Price'] - self.profile['52w_Low']) / (
+                                     self.profile['52w_High'] - self.profile['52w_Low']))
+                                 })
+        else:
+            self.profile.update({'Last_Bought_at': 0,
+                                 'Last_Sold_at': round(last_sold_at, 2),
+                                 'Position_to_Last_Bought': None,
+                                 'Position_to_Last_sold': pct_round(
+                                     self.profile['Current_Price'] / last_sold_at),
+                                 'Position_to_52w': pct_round(
+                                 (self.profile['Current_Price'] - self.profile['52w_Low']) / (
+                                     self.profile['52w_High'] - self.profile['52w_Low']))
+                                 })
+        return
+
+    def get_strategy(self):
+        if self.profile['Current_Price'] < self.profile['Last_Sold_at']:
+            target = self.profile['Last_Bought_at']
+            if self.profile['Current_Price'] > self.profile['Last_Bought_at']:
+                gap = self.profile['Last_Bought_at'] / self.profile['Current_Price'] - 1
+                strategy = 'watch BUY'
+            else:
+                gap = 0
+                strategy = 'BUY' if self.profile['Current_Price'] >= 0.8 * self.profile['Last_Bought_at'] \
+                    else 'Strong BUY'
+        else:
+            target = self.profile['Last_Sold_at']
+            gap = self.profile['Last_Sold_at'] / self.profile['Current_Price'] - 1
+            strategy = 'wait'
+        self.profile.update({'Strategy': strategy,
+                             'Gap': pct_round(gap, 2),
+                             'Next_Target': target})
+        if not self.profile.get('Gifted', False):
+            sort = gap if 'watch' in strategy else self.profile['Current_Price'] / self.profile['Last_Bought_at'] - 1
+        else:
+            sort = gap if 'watch' in strategy else self.profile['Current_Price'] / self.profile['Last_Sold_at'] - 1
+        self.profile.update({'Sort': sort})
+
+        return
 
 
 class Prospect(Profile):
     pass
-
-
-def build_exs(order_df=None):
-    if not order_df:
-        order_df = pd.read_csv('output/order_all.csv')
-    tb = order_df.groupby('ticker')[['quantity']].sum()
-    return [order_df[order_df['ticker'] == ticker] for ticker in tb[tb['quantity'] == 0].index]
 
 
 def build_prospects(watch_list):
